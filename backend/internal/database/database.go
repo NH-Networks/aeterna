@@ -5,29 +5,29 @@ import (
 	"os"
 
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite" // <--- Nieuwe import
+	"gorm.io/driver/sqlite" // <--- Added SQLite driver
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func Connect() {
-	// We kijken of er een DB_TYPE is ingesteld (standaard postgres)
+	// Check if DB_TYPE is set (default to postgres)
 	dbType := os.Getenv("DB_TYPE")
 	dsn := os.Getenv("DATABASE_URL")
 	var err error
 
 	switch dbType {
 	case "sqlite":
-		// Als er geen bestandsnaam is opgegeven, gebruiken we 'aeterna.db'
+		// If no filename is provided, use 'aeterna.db' as default
 		if dsn == "" {
 			dsn = "aeterna.db"
 		}
-		// Verbinden met SQLite
+		// Connect to SQLite
 		DB, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 
 	default:
-		// Standaard PostgreSQL logica (fallback)
+		// Default PostgreSQL logic (fallback)
 		if dsn == "" {
 			dsn = "host=localhost user=postgres password=postgres dbname=aeterna port=5432 sslmode=disable"
 		}
@@ -38,9 +38,10 @@ func Connect() {
 		log.Fatal("Failed to connect to database: ", err)
 	}
 
-	// BELANGRIJK: pgcrypto is specifiek voor Postgres.
-	// We voeren dit alleen uit als we NIET op sqlite zitten.
+	// IMPORTANT: pgcrypto is specific to Postgres.
+	// Only execute this if NOT using SQLite.
 	if dbType != "sqlite" {
+		// Ensure UUID generation is available for Postgres
 		if err := DB.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;").Error; err != nil {
 			log.Fatal("Failed to enable pgcrypto extension: ", err)
 		}
